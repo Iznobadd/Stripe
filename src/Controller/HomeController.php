@@ -30,8 +30,12 @@ class HomeController extends AbstractController
     #[Route('/panier', name: 'app_panier')]
     public function Panier(ProductRepository $productRepository): Response
     {
+        $total = 0.0;
         $products = $productRepository->findBy(['panier' => true]);
-        dd($products);
-        return $this->redirectToRoute('app_home');
+        foreach($products as $product)
+        {
+            $total += $product->getPrice();
+        }
+        return $this->render('home/panier.html.twig', compact('products', 'total'));
     }
 }
