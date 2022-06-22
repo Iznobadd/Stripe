@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Interfaces\StripePayment;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -10,6 +11,9 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class HomeController extends AbstractController
 {
+    private const STRIPE_PUBLIC="pk_test_51LDS6oA12F9voeSitX9EW5nUYmUACngYXOgA5sVM4OwPm7tr5kY9IJBqoPYrDPa93svOZS5pCd8RjDGBiPWdHy4s00K0WOXm4x";
+    private const STRIPE_SECRET="sk_test_51LDS6oA12F9voeSiIzsk5PnBRFe0N620aphfygYQfW7E01x8nQ77Jogkym1niMPiNsFB1GQINw7j2pWhnedmZA4I00hBhxZHUk";
+
     #[Route('/', name: 'app_home')]
     public function index(ProductRepository $productRepository): Response
     {
@@ -37,5 +41,15 @@ class HomeController extends AbstractController
             $total += $product->getPrice();
         }
         return $this->render('home/panier.html.twig', compact('products', 'total'));
+    }
+
+    #[Route('/paiement', name: 'app_pay')]
+    public function Paiement(ProductRepository $productRepository): Response
+    {
+        $products = $productRepository->findBy(['panier' => true]);
+        $paiement = new StripePayment(self::STRIPE_SECRET);
+
+        $paiement->startPayment($products);
+        return $this->render('paiement.html.twig');
     }
 }

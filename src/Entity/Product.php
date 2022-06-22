@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\ProductRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
@@ -22,8 +24,13 @@ class Product
     #[ORM\Column(type: 'float')]
     private $price;
 
-    #[ORM\Column(type: 'boolean')]
-    private $panier;
+    #[ORM\ManyToMany(targetEntity: Card::class, mappedBy: 'product')]
+    private $cards;
+
+    public function __construct()
+    {
+        $this->cards = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -66,15 +73,31 @@ class Product
         return $this;
     }
 
-    public function isPanier(): ?bool
+    /**
+     * @return Collection<int, Card>
+     */
+    public function getCards(): Collection
     {
-        return $this->panier;
+        return $this->cards;
     }
 
-    public function setPanier(bool $panier): self
+    public function addCard(Card $card): self
     {
-        $this->panier = $panier;
+        if (!$this->cards->contains($card)) {
+            $this->cards[] = $card;
+            $card->addProduct($this);
+        }
 
         return $this;
     }
+
+    public function removeCard(Card $card): self
+    {
+        if ($this->cards->removeElement($card)) {
+            $card->removeProduct($this);
+        }
+
+        return $this;
+    }
+
 }

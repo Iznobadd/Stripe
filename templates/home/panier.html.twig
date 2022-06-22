@@ -20,6 +20,10 @@
         {% endfor %}
         </tbody>
     </table>
-        <h1 class="text-center">Prix total : {{ total }}</h1>
+
+        <h4 class="text-center">Prix total : {{ total }}</h4>
+        <div class="text-center">
+            <a href="{{ path('app_pay') }}" class="btn btn-primary">Payer</a>
+        </div>
     </div>
 {% endblock %}
