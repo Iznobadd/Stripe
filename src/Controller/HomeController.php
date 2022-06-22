@@ -2,8 +2,12 @@
 
 namespace App\Controller;
 
+use App\Entity\Card;
+use App\Entity\User;
 use App\Interfaces\StripePayment;
+use App\Repository\CardRepository;
 use App\Repository\ProductRepository;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,24 +26,49 @@ class HomeController extends AbstractController
     }
 
     #[Route('/add/{id}', name: 'app_add_product')]
-    public function addProduct($id, ProductRepository $productRepository, EntityManagerInterface $em): Response
+    public function addProduct($id, ProductRepository $productRepository, EntityManagerInterface $em, UserRepository $userRepository): Response
     {
-        $product = $productRepository->find($id);
-        $product->setPanier(true);
-        $em->persist($product);
-        $em->flush();
+        $user = $userRepository->findOneBy(['email' => $this->getUser()->getUserIdentifier()]);
+
+        if($user)
+        {
+            $product = $productRepository->find($id);
+            if($user->getCard())
+            {
+                $card = $user->getCard();
+                $card->addProduct($product);
+                $em->persist($card);
+            }
+            else
+            {
+                $card = new Card();
+                $card->addProduct($product);
+                $user->setCard($card);
+                $em->persist($card);
+                $em->persist($user);
+            }
+
+
+            $em->flush();
+            return $this->redirectToRoute('app_home');
+        }
+
         return $this->redirectToRoute('app_home');
     }
 
     #[Route('/panier', name: 'app_panier')]
-    public function Panier(ProductRepository $productRepository): Response
+    public function Panier(ProductRepository $productRepository, UserRepository $userRepository, CardRepository $cardRepository): Response
     {
         $total = 0.0;
-        $products = $productRepository->findBy(['panier' => true]);
+        $user = $userRepository->findOneBy(['email' => $this->getUser()->getUserIdentifier()]);
+        $card = $cardRepository->find($user->getCard()->getId());
+        $products = $card->getProduct();
+
         foreach($products as $product)
         {
             $total += $product->getPrice();
         }
+
         return $this->render('home/panier.html.twig', compact('products', 'total'));
     }
 
