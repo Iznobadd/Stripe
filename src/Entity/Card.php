@@ -76,4 +76,27 @@ class Card
 
         return $this;
     }
+
+    public function getStripeLineItems()
+    {
+        $lineItems = [];
+
+        foreach($this->getProduct() as $product)
+        {
+            $line = [
+                'price_data' => [
+                    'currency' => 'EUR',
+                    'unit_amount' => $product->getPrice() * 100,
+                    'product_data' => [
+                        'name' =>$product->getName()
+                    ],
+                ],
+                'quantity' => 1,
+            ];
+
+            $lineItems[] = $line;
+        }
+
+        return $lineItems;
+    }
 }

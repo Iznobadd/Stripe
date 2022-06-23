@@ -9,7 +9,13 @@ use App\Repository\CardRepository;
 use App\Repository\ProductRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Stripe\Checkout\Session;
+use Stripe\Stripe;
+use Stripe\Webhook;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
@@ -73,12 +79,42 @@ class HomeController extends AbstractController
     }
 
     #[Route('/paiement', name: 'app_pay')]
-    public function Paiement(ProductRepository $productRepository): Response
+    public function Paiement(CardRepository $cardRepository): RedirectResponse
     {
-        $products = $productRepository->findBy(['panier' => true]);
-        $paiement = new StripePayment(self::STRIPE_SECRET);
+        $card = $cardRepository->find($this->getUser()->getCard()->getId());
 
-        $paiement->startPayment($products);
-        return $this->render('paiement.html.twig');
+        Stripe::setApiKey(self::STRIPE_SECRET);
+        Stripe::setApiVersion('2020-08-27');
+        $session = Session::create([
+           'line_items' => $card->getStripeLineItems(),
+            'mode' => 'payment',
+            'success_url' => 'http://localhost:8000/panier',
+            'cancel_url' => 'http://localhost:8000/',
+            'billing_address_collection' => 'required',
+            'shipping_address_collection' => [
+                'allowed_countries' => ['FR']
+            ],
+            'metadata' => [
+                'cart_id' => $card->getId()
+            ]
+        ]);
+        return new RedirectResponse($session->url);
+    }
+
+    #[Route('/webhook', name: 'stripe_hook')]
+    public function StripeHook(Request $request)
+    {
+        $signature = $request->headers->get('stripe-signature');
+        $body = $request->getContent();
+        $event = Webhook::constructEvent(
+            $body,
+            $signature,
+            'whsec_960676082d4f1a9b7f120e2990a4c76a8758f631cbc716a17a8cc92a24452527'
+        );
+        if($event->type === 'checkout.session.completed')
+        {
+            dd($event);
+        }
+
     }
 }
