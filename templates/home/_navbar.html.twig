@@ -9,9 +9,16 @@
                 <li class="nav-item">
                     <a class="nav-link" aria-current="page" href="{{ path('app_home') }}">Home</a>
                 </li>
-                <li class="nav-item">
+                {% if app.user %}
                     <a class="nav-link" href="{{ path('app_panier') }}">Panier</a>
+                {% else %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ path('app_register') }}">Inscription</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ path('app_login') }}">Connexion</a>
+                </li>
+                {% endif %}
             </ul>
         </div>
     </div>
